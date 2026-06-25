@@ -9,6 +9,7 @@
 body { font-family: Arial; padding: 16px; }
 button { width: 100%; padding: 12px; margin-top: 10px; }
 .card { border: 1px solid #ddd; padding: 8px; margin-top: 6px; }
+input { padding: 8px; width: 70%; }
 </style>
 </head>
 
@@ -16,10 +17,19 @@ button { width: 100%; padding: 12px; margin-top: 10px; }
 
 <h2>Vuorojako App</h2>
 
+<h3>➕ Lisää työntekijä</h3>
+<input id="newName" placeholder="nimi">
+<button onclick="add()">Lisää</button>
+
 <h3>Työntekijät</h3>
 <div id="list"></div>
 
-<h3>Aloitus (Tyvi)</h3>
+<hr>
+
+<h3>Auto (eilisestä)</h3>
+<div id="yesterday"></div>
+
+<h3>Aloitus Tyvi</h3>
 <select id="start"></select>
 
 <h3>Vaunu (2h)</h3>
@@ -32,36 +42,64 @@ button { width: 100%; padding: 12px; margin-top: 10px; }
 
 <script>
 
-let names = ["Mikko","Ville","Jukka","Jari","Antti","Sami","Petra","Olli"];
+// ---------------- DATA ----------------
+let names = JSON.parse(localStorage.getItem("names") ||
+'["Mikko","Ville","Jukka","Jari","Antti","Sami","Petra","Olli"]');
 
-const baseCycle = [
-"Tyvi","Alapöytä","Tauko","Sitomo1","Sitomo2",
-"Pakettihissi","Oikoja","Tauko2","Tauko3"
-];
+let last = JSON.parse(localStorage.getItem("last") || "{}");
 
+// ---------------- SAVE ----------------
+function save(){
+localStorage.setItem("names",JSON.stringify(names));
+}
+
+// ---------------- ADD ----------------
+function add(){
+let v=document.getElementById("newName").value;
+if(v){
+names.push(v);
+save();
+render();
+}
+}
+
+// ---------------- RENDER ----------------
 function render(){
+
 let list=document.getElementById("list");
 let start=document.getElementById("start");
 let vaunu=document.getElementById("vaunu");
+let y=document.getElementById("yesterday");
 
 list.innerHTML="";
 start.innerHTML="";
 vaunu.innerHTML="";
+y.innerHTML="";
 
 names.forEach(n=>{
 list.innerHTML += `<div class='card'>${n}</div>`;
 start.innerHTML += `<option>${n}</option>`;
 vaunu.innerHTML += `<option>${n}</option>`;
 });
+
+// eilen
+if(last.tyvi || last.vaunu){
+y.innerHTML = `
+<div class='card'><b>Eilen Tyvi:</b> ${last.tyvi || "-"}</div>
+<div class='card'><b>Eilen Vaunu:</b> ${last.vaunu || "-"}</div>
+`;
+}
 }
 render();
 
+// ---------------- KIERRON PYÖRITYS ----------------
 function rotate(arr,start){
 let i=arr.indexOf(start);
 if(i<0)return arr;
 return arr.slice(i).concat(arr.slice(0,i));
 }
 
+// ---------------- VAUNU SWAP ----------------
 function applyVaunu(arr,v){
 let i=arr.indexOf(v);
 if(i<0)return arr;
@@ -70,6 +108,7 @@ let j=(i+1)%arr.length;
 return arr;
 }
 
+// ---------------- GENERATE ----------------
 function generate(){
 
 let start=document.getElementById("start").value;
@@ -80,15 +119,33 @@ let order=[...names];
 order=rotate(order,start);
 order=applyVaunu(order,vaunu);
 
-let cycle=baseCycle.slice(0,order.length);
+let cycle=[
+"Tyvi","Alapöytä","Tauko","Sitomo1","Sitomo2",
+"Pakettihissi","Oikoja","Tauko2","Tauko3"
+];
 
 let html="";
 
-for(let i=0;i<cycle.length;i++){
-html+=`<div class='card'><b>${cycle[i]}</b> → ${order[i]}</div>`;
+// VAUNU LISTA (kuka menee päivän aikana)
+let vaunuIndex = order.indexOf(vaunu);
+let vaunuChain = [];
+
+for(let i=0;i<4;i++){
+let idx = (vaunuIndex + i) % order.length;
+vaunuChain.push(order[idx]);
 }
 
-html+=`<div class='card'><b>🚛 Vaunu:</b> ${vaunu}</div>`;
+for(let i=0;i<cycle.length;i++){
+html += `<div class='card'><b>${cycle[i]}</b> → ${order[i] || "-"}</div>`;
+}
+
+html += `<div class='card'><b>🚛 Vaunu (päivä):</b> ${vaunuChain.join(" → ")}</div>`;
+
+// TALLENNUS
+localStorage.setItem("last", JSON.stringify({
+tyvi: order[0],
+vaunu: vaunu
+}));
 
 document.getElementById("result").innerHTML=html;
 }
