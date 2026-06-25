@@ -1,12 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vuorojako</title>
+<title>Vuorojako App</title>
+
+<style>
+body { font-family: Arial; padding: 16px; }
+button { width: 100%; padding: 12px; margin-top: 10px; }
+.card { border: 1px solid #ddd; padding: 8px; margin-top: 6px; }
+</style>
 </head>
+
 <body>
 
-<h2>Vuorojako toimii</h2>
+<h2>Vuorojako App</h2>
+
+<h3>Työntekijät</h3>
+<div id="list"></div>
+
+<h3>Aloitus (Tyvi)</h3>
+<select id="start"></select>
+
+<h3>Vaunu (2h)</h3>
+<select id="vaunu"></select>
+
+<button onclick="generate()">Jaa vuorot</button>
+
+<h3>Tulos</h3>
+<div id="result"></div>
+
+<script>
+
+let names = ["Mikko","Ville","Jukka","Jari","Antti","Sami","Petra","Olli"];
+
+const baseCycle = [
+"Tyvi","Alapöytä","Tauko","Sitomo1","Sitomo2",
+"Pakettihissi","Oikoja","Tauko2","Tauko3"
+];
+
+function render(){
+let list=document.getElementById("list");
+let start=document.getElementById("start");
+let vaunu=document.getElementById("vaunu");
+
+list.innerHTML="";
+start.innerHTML="";
+vaunu.innerHTML="";
+
+names.forEach(n=>{
+list.innerHTML += `<div class='card'>${n}</div>`;
+start.innerHTML += `<option>${n}</option>`;
+vaunu.innerHTML += `<option>${n}</option>`;
+});
+}
+render();
+
+function rotate(arr,start){
+let i=arr.indexOf(start);
+if(i<0)return arr;
+return arr.slice(i).concat(arr.slice(0,i));
+}
+
+function applyVaunu(arr,v){
+let i=arr.indexOf(v);
+if(i<0)return arr;
+let j=(i+1)%arr.length;
+[arr[i],arr[j]]=[arr[j],arr[i]];
+return arr;
+}
+
+function generate(){
+
+let start=document.getElementById("start").value;
+let vaunu=document.getElementById("vaunu").value;
+
+let order=[...names];
+
+order=rotate(order,start);
+order=applyVaunu(order,vaunu);
+
+let cycle=baseCycle.slice(0,order.length);
+
+let html="";
+
+for(let i=0;i<cycle.length;i++){
+html+=`<div class='card'><b>${cycle[i]}</b> → ${order[i]}</div>`;
+}
+
+html+=`<div class='card'><b>🚛 Vaunu:</b> ${vaunu}</div>`;
+
+document.getElementById("result").innerHTML=html;
+}
+
+</script>
 
 </body>
 </html>
